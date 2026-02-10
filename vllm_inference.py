@@ -25,22 +25,22 @@ def load_model(
     if quantize:
         print("Using bitsandbytes 4-bit quantization")
     print(f"Max model length: {max_model_len}")
-    
+
     start = time.perf_counter()
-    
+
     kwargs = dict(
         model=model_name,
         dtype="float16",
         gpu_memory_utilization=gpu_memory_utilization,
         max_model_len=max_model_len,
     )
-    
+
     if quantize:
         kwargs["quantization"] = "bitsandbytes"
         kwargs["load_format"] = "bitsandbytes"
     
     llm = LLM(**kwargs)
-    
+
     elapsed = time.perf_counter() - start
     print(f"Model loaded in {elapsed:.1f}s")
     return llm
@@ -57,7 +57,7 @@ def generate(
         max_tokens=max_tokens,
         temperature=temperature,
     )
-    
+
     outputs = llm.generate(prompts, params)
     return [output.outputs[0].text for output in outputs]
 
@@ -78,7 +78,7 @@ def benchmark(llm: LLM, num_runs: int = 10, max_tokens: int = 50):
     print("=" * 60)
 
     for _ in range(3):
-        _ = llm.generate(prompts[:1], params)
+        llm.generate(prompts[:1], params)
 
     total_tokens = 0
     total_time = 0
@@ -116,7 +116,7 @@ def interactive(llm: LLM, max_tokens: int = 100):
     """Interactive mode for testing prompts."""
     print("\nInteractive mode (type 'quit' to exit)")
     print("=" * 60)
-    
+
     while True:
         try:
             prompt = input("\nPrompt: ").strip()
@@ -155,9 +155,11 @@ def main():
                         help="Maximum sequence length")
     parser.add_argument("--quantize", action="store_true",
                         help="Use bitsandbytes 4-bit quantization (less memory, slightly slower)")
-    
+    parser.add_argument("--num_runs", type=int, default=10,
+                        help="Number of benchmark runs per prompt")
+
     args = parser.parse_args()
-    
+
     llm = load_model(
         model_name=args.model,
         gpu_memory_utilization=args.gpu_memory,
@@ -166,7 +168,7 @@ def main():
     )
     
     if args.benchmark:
-        benchmark(llm, max_tokens=args.max_tokens)
+        benchmark(llm, num_runs=args.num_runs, max_tokens=args.max_tokens)
     elif args.interactive:
         interactive(llm, max_tokens=args.max_tokens)
     elif args.prompt:
