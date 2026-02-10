@@ -52,13 +52,14 @@ def generate(
     max_tokens: int = 50,
     temperature: float = 0.0,
 ) -> list[str]:
-    """Generate text from prompts."""
+    """Generate text from prompts using chat template."""
     params = SamplingParams(
         max_tokens=max_tokens,
         temperature=temperature,
     )
 
-    outputs = llm.generate(prompts, params)
+    messages = [[{"role": "user", "content": p}] for p in prompts]
+    outputs = llm.chat(messages, params)
     return [output.outputs[0].text for output in outputs]
 
 
@@ -78,17 +79,18 @@ def benchmark(llm: LLM, num_runs: int = 10, max_tokens: int = 50):
     print("=" * 60)
 
     for _ in range(3):
-        llm.generate(prompts[:1], params)
+        llm.chat([[{"role": "user", "content": prompts[0]}]], params)
 
     total_tokens = 0
     total_time = 0
 
     for i, prompt in enumerate(prompts):
+        messages = [{"role": "user", "content": prompt}]
         times = []
         run_tokens = []
         for _ in range(num_runs):
             start = time.perf_counter()
-            outputs = llm.generate([prompt], params)
+            outputs = llm.chat([messages], params)
             elapsed = time.perf_counter() - start
             times.append(elapsed)
             run_tokens.append(len(outputs[0].outputs[0].token_ids))
